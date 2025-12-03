@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Fallback background in case Tailwind utility classes on body are delayed */
+body {
+  background-color: #1c1917;
+  color: #e7e5e4;
+  margin: 0;
+}
+
+/* Custom scrollbar for webkit */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #292524;
+}
+::-webkit-scrollbar-thumb {
+  background: #57534e;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #78716c;
+}

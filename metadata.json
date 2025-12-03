@@ -1,0 +1,5 @@
+{
+  "name": "WWM Assist",
+  "description": "A comprehensive companion app for Where Winds Meet, featuring an interactive map, Chinese Chess (Xiangqi) analysis via AI, and game guides.",
+  "requestFramePermissions": []
+}
