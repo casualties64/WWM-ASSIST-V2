@@ -9,7 +9,7 @@ import { DiscordAuth } from '../types';
 // 3. Copy the "Client ID" from the "General Information" page.
 // 4. Paste your Client ID here to replace the placeholder value.
 // =================================================================================
-const DISCORD_CLIENT_ID = "YOUR_DISCORD_CLIENT_ID_HERE";
+const DISCORD_CLIENT_ID = "1445721570554155130";
 
 let discordSdk: DiscordSDK;
 
