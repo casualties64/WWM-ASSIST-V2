@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { BoardState, PieceColor, PieceType, Piece } from '../types';
 import { getBestMove, boardToFen, initEngine } from '../services/xiangqiEngine';
@@ -250,12 +251,18 @@ const PieceIcon: React.FC<{ type: PieceType; color: PieceColor }> = ({ type, col
   return <div className="w-full h-full rounded-full bg-gray-500" />;
 };
 
+interface MoveRecord {
+  from: string; // "x,y"
+  to: string;   // "x,y"
+}
+
 export const XiangqiBoard: React.FC = () => {
   const [board, setBoard] = useState<BoardState>(INITIAL_BOARD);
   const [turn, setTurn] = useState<PieceColor>(PieceColor.RED);
   const [winner, setWinner] = useState<PieceColor | null>(null);
   const [selectedPos, setSelectedPos] = useState<{ x: number, y: number } | null>(null);
   const [lastMove, setLastMove] = useState<{ from: string, to: string } | null>(null);
+  const [moveHistory, setMoveHistory] = useState<MoveRecord[]>([]);
   
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState(false);
@@ -276,6 +283,47 @@ export const XiangqiBoard: React.FC = () => {
     initEngine();
   }, []);
 
+  const checkForRepetition = (history: MoveRecord[], candidateMove: MoveRecord): boolean => {
+      // Logic: A move is repetitive if it completes a sequence that looks like A-B-A-B-A-B-A-B (4 full cycles)
+      // The candidateMove would be the 9th move in this sequence (or 5th time playing A)
+      // Current History: ... A, B, A, B, A, B, A, B
+      // Next Move: A?
+      // We look back at history.
+      
+      const len = history.length;
+      if (len < 8) return false;
+      
+      // Candidate "from-to" string
+      const cStr = `${candidateMove.from}->${candidateMove.to}`;
+      
+      // Check if this move matches move at -4, -8, -12 (indices relative to next slot)
+      // History indices: len-4, len-8, len-12, len-16
+      
+      const last4 = history[len - 4];
+      const last8 = history[len - 8];
+      
+      if (!last4 || !last8) return false;
+      
+      const m4 = `${last4.from}->${last4.to}`;
+      const m8 = `${last8.from}->${last8.to}`;
+      
+      if (cStr === m4 && cStr === m8) {
+          // This move has been played 3 times in a short loop (current + 2 past occurrences)
+          // 5 times is the request. Let's check further.
+          if (len >= 16) {
+              const last12 = history[len - 12];
+              const last16 = history[len - 16];
+              const m12 = `${last12.from}->${last12.to}`;
+              const m16 = `${last16.from}->${last16.to}`;
+              
+              if (cStr === m12 && cStr === m16) {
+                  return true; // 5th occurrence
+              }
+          }
+      }
+      return false;
+  };
+
   const handleAnalyze = async () => {
     if (winner) return;
 
@@ -289,7 +337,6 @@ export const XiangqiBoard: React.FC = () => {
     }
     
     try {
-        // Use local Engine service
         const result = await getBestMove(fenToAnalyze, 3); // Depth 3
         
         // Stale check
@@ -299,16 +346,40 @@ export const XiangqiBoard: React.FC = () => {
         }
         
         if (result && result.bestMove) {
-            // Validate the move suggested by Engine against JS rules to be safe
-            const [fx, fy] = result.bestMove.from;
-            const [tx, ty] = result.bestMove.to;
+            // Repetition Check
+            // Iterate candidates to find the best non-repetitive move
+            let selectedMove = result.bestMove;
+            let explanation = result.explanation;
+
+            if (result.candidates && result.candidates.length > 0) {
+                for (const candidate of result.candidates) {
+                    const cMoveRec: MoveRecord = { 
+                        from: `${candidate.move.from[0]},${candidate.move.from[1]}`,
+                        to: `${candidate.move.to[0]},${candidate.move.to[1]}`
+                    };
+                    
+                    if (checkForRepetition(moveHistory, cMoveRec)) {
+                        console.log("Skipping repetitive move:", candidate.move.notation);
+                        continue;
+                    }
+                    
+                    // Found a valid move
+                    selectedMove = candidate.move;
+                    explanation = `Score: ${(candidate.score/100).toFixed(2)} (Alternative chosen to avoid repetition)`;
+                    break;
+                }
+            }
+            
+            // Validate the chosen move
+            const [fx, fy] = selectedMove.from;
+            const [tx, ty] = selectedMove.to;
             const isLegal = isValidMove(board, fx, fy, tx, ty, turn);
 
             if (isLegal) {
-                setAnalysisResult(result);
+                setAnalysisResult({ bestMove: selectedMove, explanation });
                 setAnalysisError(false);
             } else {
-                console.warn("Engine suggested illegal move:", result.bestMove);
+                console.warn("Engine suggested illegal move:", selectedMove);
                 setAnalysisError(true);
                 if (!autoAnalyze) setAnalysisResult(null);
             }
@@ -438,11 +509,13 @@ export const XiangqiBoard: React.FC = () => {
             }
 
             // Execute move
-            delete newBoard[`${selectedPos.x},${selectedPos.y}`];
+            const fromKey = `${selectedPos.x},${selectedPos.y}`;
+            delete newBoard[fromKey];
             newBoard[key] = selectedPiece;
             
             setBoard(newBoard);
-            setLastMove({ from: `${selectedPos.x},${selectedPos.y}`, to: key });
+            setLastMove({ from: fromKey, to: key });
+            setMoveHistory(prev => [...prev, { from: fromKey, to: key }]);
             setSelectedPos(null);
             setAnalysisResult(null);
             
@@ -463,6 +536,7 @@ export const XiangqiBoard: React.FC = () => {
     setWinner(null);
     setSelectedPos(null);
     setLastMove(null);
+    setMoveHistory([]);
     setAnalysisResult(null);
     setAnalysisError(false);
   };
@@ -473,6 +547,7 @@ export const XiangqiBoard: React.FC = () => {
     setWinner(null);
     setSelectedPos(null);
     setLastMove(null);
+    setMoveHistory([]);
     setAnalysisResult(null);
     setAnalysisError(false);
   };

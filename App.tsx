@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Map, ScrollText, Layout, Loader2, Scale } from 'lucide-react';
+import { Map, ScrollText, Layout, Loader2, Scale, Coffee } from 'lucide-react';
 import { Tab, DiscordAuth } from './types';
 import { MapTab } from './components/MapTab';
 import { XiangqiBoard } from './components/XiangqiBoard';
@@ -193,9 +193,20 @@ const App: React.FC = () => {
     >
       <header className="bg-stone-950 border-b border-stone-800 p-3 flex items-center justify-between shrink-0 z-10">
         {headerContent}
-        <div className="text-xs text-stone-500 hidden sm:block">
-          <button onClick={() => handleLegalClick('TERMS')} className="hover:text-stone-300 mr-2">Terms</button>
-          <button onClick={() => handleLegalClick('PRIVACY')} className="hover:text-stone-300">Privacy</button>
+        <div className="flex items-center gap-4">
+          <a 
+            href="https://www.paypal.com/donate/?business=P6P5JA7WRBM36&no_recurring=0&item_name=If+you+enjoyed+any+of+the+apps+I%27ve+created%2C+please+donate+and+buy+me+a+coffee.+Thank+you+and+I+hope+you%27ve+enjoyed+my+work%21&currency_code=USD"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-[#98ff98] hover:bg-[#80e580] text-stone-900 font-bold px-4 py-2 rounded-lg shadow-md transition-all hover:scale-105 flex items-center gap-2 text-base sm:flex hidden"
+          >
+            <Coffee size={20} />
+            Buy me a Coffee! (Donate)
+          </a>
+          <div className="text-xs text-stone-500 hidden sm:block">
+            <button onClick={() => handleLegalClick('TERMS')} className="hover:text-stone-300 mr-2">Terms</button>
+            <button onClick={() => handleLegalClick('PRIVACY')} className="hover:text-stone-300">Privacy</button>
+          </div>
         </div>
       </header>
       <main className="flex-1 overflow-y-auto overflow-x-hidden relative">
