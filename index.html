@@ -6,6 +6,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#1c1917" />
     <title>Winds Meet Assistant</title>
+    <!-- Critical Error Logger: Catches crash before React loads -->
+    <script>
+      window.onerror = function(msg, url, line, col, error) {
+        var box = document.createElement('div');
+        box.style.position = 'fixed';
+        box.style.top = '0';
+        box.style.left = '0';
+        box.style.width = '100%';
+        box.style.backgroundColor = 'red';
+        box.style.color = 'white';
+        box.style.padding = '20px';
+        box.style.zIndex = '999999';
+        box.style.whiteSpace = 'pre-wrap';
+        box.innerText = 'CRITICAL ERROR:\n' + msg + '\n' + url + ':' + line;
+        document.body.appendChild(box);
+        return false;
+      };
+    </script>
     <!-- Tailwind CDN: Ensures styles load in Preview/Dev environments even if build step is skipped -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -55,7 +73,10 @@
 <link rel="stylesheet" href="/index.css">
 </head>
   <body class="bg-stone-900 text-stone-200 overflow-hidden h-full">
-    <div id="root" class="h-full w-full"></div>
+    <div id="root" class="h-full w-full flex items-center justify-center">
+      <!-- Fallback content if JS fails -->
+      <div class="text-stone-500 animate-pulse font-mono">Loading App Resources...</div>
+    </div>
     <script type="module" src="./index.tsx"></script>
   <script type="module" src="/index.tsx"></script>
 </body>

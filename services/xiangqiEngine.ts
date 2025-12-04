@@ -2,10 +2,13 @@ import { BoardState, PieceColor, PieceType } from '../types';
 
 let ffishInstance: any = null;
 let engineReady = false;
+let engineInitializing = false;
 
 // Initialize the WASM module
 export const initEngine = async () => {
-    if (ffishInstance) return;
+    if (ffishInstance || engineInitializing) return;
+    engineInitializing = true;
+    
     try {
         // Dynamic import to prevent bundle crash if module format is incompatible
         // We use a try-catch block specifically around the import for robustness
@@ -16,10 +19,13 @@ export const initEngine = async () => {
             Module = moduleImport.default || moduleImport;
         } catch (importError) {
             console.warn("Could not import ffish-es6 locally. This is expected in some preview environments.", importError);
+            engineInitializing = false;
             return;
         }
 
         if (Module) {
+            // Emscripten Module initialization returns a Promise. 
+            // We wrap this in the outer try/catch to handle WASM fetch errors (e.g. 404/CSP blocks)
             ffishInstance = await Module({
                 locateFile: (path: string) => {
                     if (path.endsWith('.wasm')) {
@@ -34,6 +40,8 @@ export const initEngine = async () => {
         }
     } catch (e) {
         console.error("Failed to load Xiangqi Engine:", e);
+    } finally {
+        engineInitializing = false;
     }
 };
 

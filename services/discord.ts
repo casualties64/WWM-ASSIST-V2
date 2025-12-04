@@ -29,11 +29,18 @@ export async function setupDiscordSdk(): Promise<{ sdk: DiscordSDK, auth: Discor
   const clientIdStr = String(DISCORD_CLIENT_ID);
 
   if (clientIdStr === "YOUR_DISCORD_CLIENT_ID_HERE") {
+    // Fail immediately without network attempts if ID is not set
     throw new Error("Discord Client ID is not set. Please update services/discord.ts");
   }
 
   discordSdk = new DiscordSDK(clientIdStr);
-  await discordSdk.ready();
+  
+  try {
+    await discordSdk.ready();
+  } catch (e) {
+    console.error("Discord SDK ready() failed:", e);
+    throw new Error("Failed to initialize Discord SDK handshake.");
+  }
 
   // The full OAuth2 flow (authorize -> token exchange -> authenticate) is required for
   // apps that need to act on behalf of the user (e.g., make API calls).
@@ -44,9 +51,19 @@ export async function setupDiscordSdk(): Promise<{ sdk: DiscordSDK, auth: Discor
   console.log("Discord SDK is ready. Fetching user info...");
 
   // We can get the current user's info from the voice channel state.
-  const channel = await discordSdk.commands.getChannel({ channel_id: discordSdk.channelId! });
-  if (!channel || !channel.voice_states) {
+  let channel;
+  try {
+      if (!discordSdk.channelId) {
+          throw new Error("Channel ID not available after ready()");
+      }
+      channel = await discordSdk.commands.getChannel({ channel_id: discordSdk.channelId });
+  } catch (e) {
+      console.error("Failed to fetch channel info:", e);
       throw new Error("Could not retrieve channel information.");
+  }
+
+  if (!channel || !channel.voice_states) {
+      throw new Error("Channel information is empty.");
   }
 
   // Try to find the user. Note: .userId might not be in the type definition in all versions.
